@@ -2,6 +2,7 @@ import asyncio
 
 from aiogram import Bot, Dispatcher, executor
 from config import BOT_TOKEN
+from keyboard import menu
 
 bot = Bot(BOT_TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot)
