@@ -16,7 +16,7 @@ async def support_keyboard(messages, user_id = None):
     if user_id:
         # Если указан user_id, то данная клавиатура передается модератору
         contact_id = int(user_id)
-        text = "Ответить пользователю"
+        text = "Ответить"
         as_user = "no"
     else:
         # Данная клавиатура передается пользователю
