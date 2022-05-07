@@ -1,7 +1,9 @@
+import random
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 
 from create import dp
+from config import support_ids
 
 # Параметры кнопок: 1 - префикс (имя), 2.. - функциональные: то, что мы хотим сохранить о наших кнопках
 # messages - параметр, который определяет, будет ли вестись диалог между пользователем и модератором
@@ -19,12 +21,17 @@ async def support_keyboard(messages, user_id = None):
     else:
         # Данная клавиатура передается пользователю
         as_user = "yes"
+        contact_id = await get_support_moderator()
+
         if messages == "one":
             text = "Написать 1 сообщение модератору"
+            contact_id = random.choice(support_ids)
         else:
+            if not contact_id:
+                # Если не нашли свободного оператора - выходим и говорим, что его нет
+                return False
             text = "Начать диалог с модератором"
 
-    contact_id = 1970715638
     keyboard = InlineKeyboardMarkup()
     keyboard.add(
         InlineKeyboardButton(
@@ -38,5 +45,25 @@ async def support_keyboard(messages, user_id = None):
             )
         )
     )
-
+    #print(contact_id)
     return keyboard
+
+async def check_state_moderator(support_id):
+    """Функция, проверяющая занятость модератора"""
+    # Узнаем статус модератора
+    state = dp.current_state(chat=support_id, user=support_id)
+    state_str = str(await state.get_state())
+    if state_str == "in_support":
+        return False
+    else:
+        return True
+
+async def get_support_moderator():
+    """Функция, возвращающая рандомного модератора"""
+    # Перемешиваем массив id модераторов
+    random.shuffle(support_ids)
+    for id in support_ids:
+        # Проверим если модератор в данное время не занят
+        if await check_state_moderator(id):
+            return id
+    return False
