@@ -13,6 +13,7 @@ async def ask_support(message: types.Message):
     # messages - параметр, который определяет, будет ли вестись диалог между пользователем и модератором
     # или будет обмен одним сообщением
     keyboard = await support_keyboard(messages="one")
+    print(message)
     await message.answer(text, reply_markup=keyboard)
 
 
