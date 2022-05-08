@@ -1,7 +1,7 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 # готовая реализация TF IDF из библиотеки sklearn
 from pymystem3 import Mystem
-from stop_word import stop_w
+from keyword_search.stop_word import stop_w
 
 rus_stops = stop_w.split(",")
 
@@ -15,7 +15,7 @@ def preprocess_for_tfidif (some_text):
     # поскольку tfidf векторайзер принимает на вход строку,
     #после лемматизации склеим все обратно
 
-def search(message):
+async def search_message(message):
     file_texts = [message]
 
     make_tf_idf = TfidfVectorizer(stop_words=rus_stops)
@@ -32,5 +32,3 @@ def search(message):
         # берем крайние 6 слов отсортированного ряда
         top_words_for_this_text = words_for_this_text[0, :-6:-1]
     return [id2word[w] for w in top_words_for_this_text]
-
-print(search("я аленушка ты иванушка солнце светит трава зеленеевт"))
