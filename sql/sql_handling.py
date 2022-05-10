@@ -1,6 +1,5 @@
 import sqlite3
 
-
 class SQL:
     def __init__(self, database):
         self.connection = sqlite3.connect(database)
@@ -26,5 +25,16 @@ class SQL:
         with self.connection:
             return self.cursor.execute("UPDATE `faq` SET `key_words` = ? WHERE `question` = ?", (keywords, question))
 
+    def dict_factory(cursor, row):
+        d = {}
+        for idx, col in enumerate(cursor.description):
+            d[col[0]] = row[idx]
+        return d
+
     def close(self):
         self.connection.close()
+
+sql = SQL("faq.db")
+sql.add_question("Что такое?", answered=False)
+sql.close()
+

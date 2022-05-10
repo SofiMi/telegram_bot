@@ -10,6 +10,7 @@ from config import support_ids
 # или будет обмен одним сообщением
 # as_user определяет, кто нажал данную кнопку: модератор или пользователь
 support_callback = CallbackData("ask_support", "messages", "user_id", "as_user")
+cancel_support_callback = CallbackData("cancel_support", "user_id")
 
 async def support_keyboard(messages, user_id = None):
     """Функция, которая передает нужную клавиатуру"""
@@ -67,3 +68,17 @@ async def get_support_moderator():
         if await check_state_moderator(id):
             return id
     return False
+
+def cancel_support(user_id):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Завершить сеанс",
+                    callback_data=cancel_support_callback.new(
+                        user_id=user_id
+                    )
+                )
+            ]
+        ]
+    )

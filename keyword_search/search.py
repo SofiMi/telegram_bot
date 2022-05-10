@@ -32,3 +32,5 @@ async def search_message(message):
         # берем крайние 6 слов отсортированного ряда
         top_words_for_this_text = words_for_this_text[0, :-6:-1]
     return [id2word[w] for w in top_words_for_this_text]
+
+
