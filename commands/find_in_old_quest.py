@@ -26,19 +26,33 @@ async def click_on_the_button_find(call, state, callback_data):
 async def get_support_message_find(message, state):
     "Функция, которая выводит потенциально нужные вопросы из базы данных"
     sql = SQL("sql/faq.db")
-    text_n = str(message.text)
-    keys = []
-    sql_key = list(sql.dict_factory())
-    for key in sql_key:
-        keys.append(key[0])
-    new_keys = set(await search_message(text_n)) & set(keys)
+
     list_ques = []
     list_answ = []
-    for n_key in new_keys:
-        for old_key in sql_key:
-            if n_key == old_key[0]:
-                list_ques.append(old_key[1])
-                list_answ.append(old_key[2])
+
+    # Находим ключевые слова
+    text_n = str(message.text)
+    key_list = await search_message(text_n)
+
+    # Проходимся по базе данных и вносим в словарик
+    dict_numb = {}
+    sql_key = list(sql.dict_factory())
+    for key_n in key_list:
+        for key_o in sql_key:
+            if key_n == key_o[0]:
+                number_list = key_o[1].split(" ")
+                for key in number_list:
+                    if key in dict_numb:
+                        dict_numb[key] += 1
+                    else:
+                        dict_numb[key] = 1
+
+    # Проверяем сколько раз встретился вопрос
+    for key in dict_numb:
+        if dict_numb[key] >= 2:
+            list_ques.append(list(sql.get_quest_for_number(key))[0])
+            list_answ.append(key)
+
     keyboard = await keyboard_find_key("find_key", list_ques, list_answ)
     await message.answer("Вас интересует что-то из этих вопросов? Если вы не нашли нужную информацию, то "
                          "нажмите /support или /support_call", reply_markup=keyboard)
@@ -50,5 +64,7 @@ async def get_support_message_find(message, state):
 # Декоратор оборачивает функцию, когда нажимается кнопка с отправкой одного сообщения модератору
 async def click_on_ques(call, callback_data):
     """Функция, которая обрабатывает нажатие на кнопку отправки сообщения"""
+    sql = SQL("sql/faq.db")
     await call.answer()
-    await call.message.answer(f"{callback_data.get('answer')}")
+    await call.message.answer(f"{list(sql.get_answ_for_number(callback_data.get('answer')))[0]}")
+    sql.close()
