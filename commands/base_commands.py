@@ -1,5 +1,6 @@
+
 from aiogram.dispatcher.filters.builtin import CommandHelp, CommandStart
-from create import dp
+from create import dp, bot
 
 @dp.message_handler(CommandHelp())
 async def bot_help(message):
@@ -16,3 +17,5 @@ async def bot_help(message):
 async def bot_start(message):
     """Базовая команда начала общения с пользователем: приветствие"""
     await message.answer(f"Привет, {message.from_user.full_name}!")
+    await bot.send_sticker(chat_id=message.from_user.id,
+                     sticker=r"CAACAgIAAxkBAAEFGHNiskY51VxAZge3B8ZMf31aOcN4TQAChwIAAladvQpC7XQrQFfQkCkE")

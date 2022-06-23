@@ -6,6 +6,7 @@ from keyboards.keyboard_find_key import keyboard_find_key,keyboard_find_key_s
 from keyboards.keyboard_find import support_callback
 from keyword_search.search import search_message
 from sql.sql_handling import SQL
+import os
 
 @dp.message_handler(Command("find"))
 async def start_find(message):
@@ -25,10 +26,11 @@ async def click_on_the_button_find(call, state, callback_data):
 @dp.message_handler(state="find_message")
 async def get_support_message_find(message, state):
     "Функция, которая выводит потенциально нужные вопросы из базы данных"
+    mess = "Вас интересует что-то из этих вопросов?\n\n"
     sql = SQL("sql/faq.db")
 
-    list_ques = []
     list_answ = []
+    count = 0
 
     # Находим ключевые слова
     text_n = str(message.text)
@@ -49,22 +51,37 @@ async def get_support_message_find(message, state):
 
     # Проверяем сколько раз встретился вопрос
     for key in dict_numb:
-        if dict_numb[key] >= 2:
-            list_ques.append(list(sql.get_quest_for_number(key))[0])
+        if len(sql_key) > 1:
+            if dict_numb[key] >= 2:
+                mess += str(count + 1) + ") " + list(sql.get_quest_for_number(key))[0] + "\n"
+                count += 1
+                list_answ.append(key)
+        else:
+            mess += str(count + 1) + ") " + list(sql.get_quest_for_number(key))[0] + "\n"
+            count += 1
             list_answ.append(key)
 
-    keyboard = await keyboard_find_key("find_key", list_ques, list_answ)
-    await message.answer("Вас интересует что-то из этих вопросов? Если вы не нашли нужную информацию, то "
-                         "нажмите /support или /support_call", reply_markup=keyboard)
+    if count == 0:
+        mess = "К сожалению, похожих вопросов не было найдено. \n" \
+               "Вы можете обратиться к модератору с помощью /support или /support_call"
+
+    keyboard = await keyboard_find_key("find_key", count, list_answ)
+    await message.answer(mess, reply_markup=keyboard)
 
     await state.reset_state()
     sql.close()
 
 @dp.callback_query_handler(keyboard_find_key_s.filter(messages="find_key"))
-# Декоратор оборачивает функцию, когда нажимается кнопка с отправкой одного сообщения модератору
 async def click_on_ques(call, callback_data):
     """Функция, которая обрабатывает нажатие на кнопку отправки сообщения"""
     sql = SQL("sql/faq.db")
+    num_q = callback_data.get('answer')
     await call.answer()
-    await call.message.answer(f"{list(sql.get_answ_for_number(callback_data.get('answer')))[0]}")
+    await call.message.answer(f"{list(sql.get_answ_for_number(num_q))[0]}")
+
+    if sql.is_image(num_q):
+        sql.read_blob_data(num_q)
+        photo = open('photo.jpg', 'rb')
+        await bot.send_photo(call.message.chat.id, photo)
+        os.remove("photo.jpg")
     sql.close()

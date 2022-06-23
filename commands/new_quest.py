@@ -5,11 +5,15 @@ from aiogram.dispatcher.filters import Command
 from sql.sql_handling import SQL
 from keyword_search.search import search_message
 
-from create import dp
+from create import dp, bot
+import os
 
 class Test(StatesGroup):
     add_quest = State()
     add_answ = State()
+    add_img_step_1 = State()
+    add_img_step_2 = State()
+
 
 @dp.message_handler(Command("new_quest"), state=None)
 async def enter_add(message: types.Message):
@@ -25,11 +29,19 @@ async def add_question(message: types.Message, state: FSMContext):
     await Test.next()
 
 @dp.message_handler(state=Test.add_answ)
-async def add_answer(message: types.Message, state: FSMContext):
+async def add_answ(message: types.Message, state: FSMContext):
+    answer = message.text
+    await state.update_data(answer=answer)
+    await message.answer("Хотите ли добавить изображение?\nНапишите - 'нет', если это не так, иначе - 'да'.")
+    await Test.next()
+
+@dp.message_handler(state=Test.add_img_step_1)
+async def add_im_1(message: types.Message, state: FSMContext):
     # Достаем переменные
     data = await state.get_data()
     quest = data.get("quest")
-    answ = message.text
+    answ = data.get("answer")
+    text = message.text
 
     key_word = await search_message(quest)
 
@@ -43,5 +55,25 @@ async def add_answer(message: types.Message, state: FSMContext):
             sql.update_number(word, sql.get_number(quest)[0])
     sql.close()
 
+    if text == "нет":
+        await state.finish()
+        await message.answer("Спасибо за проделанную работу!")
+    else:
+        await Test.next()
+        await message.answer("Отправьте изображение")
+
+@dp.message_handler(content_types=['photo'], state=Test.add_img_step_2)
+async def add_im_2(message: types.Message, state: FSMContext):
+    """Добавление изображения в бд"""
+    await message.photo[-1].download('photo_d.jpg')
+    data = await state.get_data()
+
+    #Добавляем изображение в базу данных
+    sql = SQL("sql/faq.db")
+    sql.insert_blob('photo_d.jpg', sql.get_number(data.get("quest"))[0])
+    sql.close()
+
+    os.remove("photo_d.jpg")
     await message.answer("Спасибо за проделанную работу!")
     await state.finish()
+

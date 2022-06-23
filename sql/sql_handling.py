@@ -1,4 +1,4 @@
-import sqlite3
+import sqlite3, os
 
 class SQL:
     """Класс, отвечающий за коммуникацию с БД"""
@@ -88,6 +88,49 @@ class SQL:
             self.cursor.execute("SELECT `answer` FROM `faq` WHERE `number` = ?", (number,))
             for res in self.cursor:
                 return res
+
+    # Блок обработки изображении
+    def convert_to_binary_data(self, filename):
+        """Преобразование данных в двоичный формат"""
+        with open(filename, 'rb') as file:
+            blob_data = file.read()
+        return blob_data
+
+    def insert_blob(self, photo, number_q):
+        """Добавление изображения в таблицу faq"""
+        with self.connection:
+            sqlite_insert_blob_query = """UPDATE `faq` SET `photo` = ? WHERE `number` = ?"""
+
+            emp_photo = self.convert_to_binary_data(photo)
+            # Преобразование данных в формат кортежа
+            data_tuple = (emp_photo, number_q)
+            self.cursor.execute(sqlite_insert_blob_query, data_tuple)
+            self.connection.commit()
+
+    def write_to_file(self, data, filename):
+        """Преобразование двоичных данных в нужный формат"""
+        with open(filename, 'wb') as file:
+            file.write(data)
+        print("Данный из blob сохранены в: ", filename, "\n")
+
+    def read_blob_data(self, num):
+        """Вывод изображения из таблицы faq"""
+        with self.connection:
+            sql_fetch_blob_query = """SELECT * from faq where number = ?"""
+            self.cursor.execute(sql_fetch_blob_query, (num,))
+            record = self.cursor.fetchall()
+            for row in record:
+                photo = row[3]
+                self.write_to_file(photo, "photo.jpg")
+
+    def is_image(self, num):
+        """Проверяет по номеру вопроса есть ли изображение"""
+        with self.connection:
+            self.cursor.execute("SELECT `photo` FROM `faq` WHERE `number` = ?", (num,))
+            for res in self.cursor:
+                return list(res)[0]
+
+    # Блок закончен
 
     def close(self):
         """Закрывает базу данных"""
