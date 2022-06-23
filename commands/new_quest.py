@@ -4,6 +4,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Command
 from sql.sql_handling import SQL
 from keyword_search.search import search_message
+from keyword_search.parsing import parsing
 
 from create import dp, bot
 import os
@@ -32,7 +33,8 @@ async def add_question(message: types.Message, state: FSMContext):
 async def add_answ(message: types.Message, state: FSMContext):
     answer = message.text
     await state.update_data(answer=answer)
-    await message.answer("Хотите ли добавить изображение?\nНапишите - 'нет', если это не так, иначе - 'да'.")
+    await message.answer("Происходит процесс обработки ключевых слов.Не переживайте, если он займет некоторое время.\n"
+                         "Хотите ли добавить изображение?\nНапишите - 'нет', если это не так, иначе - 'да'.")
     await Test.next()
 
 @dp.message_handler(state=Test.add_img_step_1)
@@ -42,13 +44,20 @@ async def add_im_1(message: types.Message, state: FSMContext):
     quest = data.get("quest")
     answ = data.get("answer")
     text = message.text
+    par = parsing()
 
     key_word = await search_message(quest)
+    key_word_with_syn = []
+    for word in key_word:
+        key_word_with_syn.append(word)
+        dop = par.go_syn(word)
+        for dop_word in dop:
+            key_word_with_syn.append(dop_word)
 
     sql = SQL("sql/faq.db")
     sql.add_question(quest, answ)
 
-    for word in key_word:
+    for word in key_word_with_syn:
         if not sql.find_key_word(word):
             sql.add_keys(word, sql.get_number(quest)[0])
         else:
